@@ -1,4 +1,3 @@
-cat << 'EOF' > README.md
 # ERP System for 3D Production Company  
 **Odoo v19 | n8n | RabbitMQ | Stripe | JavaScript**
 
