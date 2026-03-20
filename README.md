@@ -47,13 +47,9 @@ Website → JS → n8n → RabbitMQ → n8n → Odoo (CRM + DB)
 
 Follow these steps to run the project locally:
 
----
-
 ### 1. Start Docker
 
 Make sure Docker and Docker Compose are installed and running.
-
----
 
 ### 2. Run containers
 
@@ -63,8 +59,6 @@ Navigate to the folder with the docker-compose.yml file and run:
 
 This will start all required services (Odoo, PostgreSQL, n8n, RabbitMQ, Mailpit).
 
----
-
 ### 3. Restore Odoo database
 
 1. Open Odoo: http://localhost:8069  
@@ -72,8 +66,6 @@ This will start all required services (Odoo, PostgreSQL, n8n, RabbitMQ, Mailpit)
 3. Upload the provided .zip backup  
 4. Check the option indicating the database has been moved  
 5. Enter required credentials and restore the database  
-
----
 
 ### 4. Configure RabbitMQ
 
@@ -86,15 +78,11 @@ This will start all required services (Odoo, PostgreSQL, n8n, RabbitMQ, Mailpit)
    - name: leads  
    - keep all other settings as default  
 
----
-
 ### 5. Import n8n workflows
 
 1. Open n8n: http://localhost:5678  
 2. Click "+" → "Import" → "From File"  
 3. Import the provided workflow files  
-
----
 
 ### 6. Configure n8n credentials
 
@@ -105,8 +93,6 @@ Odoo:
 - Host: http://web:8069  
 - Login: your Odoo user email  
 - API Key: generate in Odoo → User → Preferences → Security  
-
----
 
 ### 7. Verify setup
 
@@ -119,8 +105,6 @@ If everything is configured correctly:
 - Data flows through n8n  
 - Messages appear in RabbitMQ  
 - Leads appear in Odoo  
-
----
 
 ## 🛑 Stop the project
 
