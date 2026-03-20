@@ -1,0 +1,144 @@
+{
+  "name": "Adding Leads",
+  "nodes": [
+    {
+      "parameters": {
+        "queue": "leads",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rabbitmqTrigger",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        0
+      ],
+      "id": "7237e1d8-dc89-47e3-9f21-8117710667ff",
+      "name": "RabbitMQ Trigger",
+      "credentials": {
+        "rabbitmq": {
+          "id": "2MyFwNdbhVgLVH6A",
+          "name": "RabbitMQ account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "custom",
+        "customResource": "crm.lead",
+        "fieldsToCreateOrUpdate": {
+          "fields": [
+            {
+              "fieldName": "name",
+              "fieldValue": "={{$json.name}}"
+            },
+            {
+              "fieldName": "phone",
+              "fieldValue": "={{ $json.phone }}"
+            },
+            {
+              "fieldName": "email_from",
+              "fieldValue": "={{ $json.email_from }}"
+            },
+            {
+              "fieldName": "description",
+              "fieldValue": "={{ $json.description }}"
+            },
+            {
+              "fieldName": "type",
+              "fieldValue": "={{ $json.type }}"
+            },
+            {
+              "fieldName": "contact_name",
+              "fieldValue": "={{$json.contact_name}}"
+            }
+          ]
+        }
+      },
+      "id": "37125f9d-bed0-4f1c-8f0a-f22eb017697b",
+      "name": "Create Lead",
+      "type": "n8n-nodes-base.odoo",
+      "position": [
+        -160,
+        0
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "odooApi": {
+          "id": "yeLpzEBNBTiZRBCZ",
+          "name": "Odoo account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "e16811c1-d501-4d43-8273-cfd9745f6b56",
+      "name": "Execution Data",
+      "type": "n8n-nodes-base.executionData",
+      "position": [
+        48,
+        0
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Code node (после RabbitMQ Trigger)\n// Формирует ровный payload для Odoo crm.lead\n// Возвращает для каждого входного item:\n// { name, contact_name, email_from, phone, description, type }\n\nfunction s(x) { return (x ?? '').toString().trim(); }\n\nconst outputs = items.map(item => {\n  // raw — то, что вернул RabbitMQ Trigger в item.json\n  const raw = item.json ?? {};\n\n  // возможные места, где лежат данные\n  // 1) raw.content (часто строка JSON)\n  // 2) raw.body (объект)\n  // 3) raw.message / raw.payload\n  // 4) сам raw\n  let content = raw.content ?? raw.body ?? raw.message ?? raw.payload ?? raw;\n\n  // если content — строка, пытаемся распарсить как JSON\n  if (typeof content === 'string') {\n    try {\n      content = JSON.parse(content);\n    } catch (e) {\n      // Если парсинг не удался — оставляем строку и постараемся извлечь поля простым поиском\n      // (на случай, если content = \"name=...&phone=...\" или подобное)\n      // В большинстве случаев это не потребуется.\n      content = { rawString: content };\n    }\n  }\n\n  // Иногда полезная нагрузка может оказаться вложенной: content.body\n  if (content && typeof content === 'object' && (content.body && typeof content.body === 'object')) {\n    content = content.body;\n  }\n\n  // стандартные варианты имён полей\n  const firstname = s(content.firstname ?? content.firstName ?? content.first_name ?? '');\n  const lastname  = s(content.lastname  ?? content.lastName  ?? content.last_name  ?? '');\n  const nameFromFields = `${firstname} ${lastname}`.trim();\n\n  const name         = s(content.name ?? content.contact_name ?? nameFromFields ?? content.title ?? '');\n  const contact_name = s(content.contact_name ?? content.contactName ?? name);\n  const email_from   = s(content.email_from ?? content.email ?? content.emailAddress ?? '');\n  const phone        = s(content.phone ?? content.mobile ?? content.phoneNumber ?? '');\n  const description  = s(content.description ?? content.notes ?? content.comment ?? '');\n  const type         = s(content.type ?? 'lead');\n\n  // final: гарантируем, что name не пустой\n  const finalName = name || contact_name || email_from || 'New Lead';\n\n  return {\n    json: {\n      name: finalName,\n      contact_name: contact_name || finalName,\n      email_from,\n      phone,\n      description,\n      type\n    }\n  };\n});\n\nreturn outputs;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -368,
+        0
+      ],
+      "id": "c0a82f00-23f1-48c0-a298-ae05283002ee",
+      "name": "Prepare playload"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Create Lead": {
+      "main": [
+        [
+          {
+            "node": "Execution Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RabbitMQ Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare playload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare playload": {
+      "main": [
+        [
+          {
+            "node": "Create Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4ec74c7b-4739-4dfd-946b-f7290f71a233",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bcc1015e148d2041df5d464cc6226cc333781f3ad19d823e20e7b42ce9b4abe3"
+  },
+  "id": "4t8SdoWihWGD9tUR",
+  "tags": []
+}

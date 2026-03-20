@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="mail_template_weekly_greeting" model="mail.template">
+        <field name="name">Weekly Greeting</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="subject">Вітаємо!</field>
+        <field name="email_from">sales@test.com</field>
+        <field name="email_to">${object.email_from}</field>
+        <field name="body_html" type="html">
+            <![CDATA[
+            <p>Доброго дня, ${object.name}!</p>
+            ]]>
+        </field>
+    </record>
+</odoo>

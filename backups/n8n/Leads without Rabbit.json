@@ -1,0 +1,268 @@
+{
+  "name": "Leads without Rabbit",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-webform",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "de05177e-8c86-4f93-8157-cb91b63c9161",
+      "name": "Webhook - Lead Webform",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -880,
+        144
+      ],
+      "webhookId": "c5964162-2fbe-401e-9560-8def7e2b2493",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "resource": "custom",
+        "customResource": "crm.lead",
+        "fieldsToCreateOrUpdate": {
+          "fields": [
+            {
+              "fieldName": "name",
+              "fieldValue": "={{ $json.contact_name }}"
+            },
+            {
+              "fieldName": "phone",
+              "fieldValue": "={{ $json.phone }}"
+            },
+            {
+              "fieldName": "email_from",
+              "fieldValue": "={{ $json.email_from }}"
+            },
+            {
+              "fieldName": "description",
+              "fieldValue": "={{ $json.description }}"
+            },
+            {
+              "fieldName": "source_id",
+              "fieldValue": "={{ $json.source_id }}"
+            },
+            {
+              "fieldName": "medium_id",
+              "fieldValue": "={{ $json.medium_id }}"
+            },
+            {
+              "fieldName": "campaign_id",
+              "fieldValue": "={{ $json.campaign_id }}"
+            },
+            {
+              "fieldName": "type",
+              "fieldValue": "={{ $json.type }}"
+            },
+            {
+              "fieldName": "contact_name",
+              "fieldValue": "={{ $json.contact_name }}"
+            }
+          ]
+        }
+      },
+      "id": "d00eacf4-a1c9-4ea6-962b-5217491612ea",
+      "name": "Create Lead",
+      "type": "n8n-nodes-base.odoo",
+      "position": [
+        -224,
+        176
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "odooApi": {
+          "id": "yeLpzEBNBTiZRBCZ",
+          "name": "Odoo account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Code node (Run once for all items)\n//\n// Purpose\n// -------\n// Prepare JSON payload for Odoo `crm.lead` create directly from the webhook.\n//\n// Expected input:\n// - 1 item from the webhook: { body: { firstname, lastname, email, phone, notes, ... } }\n//   (or fields at root-level)\n//\n// Output:\n// - 1 item: { name, contact_name, email_from, phone, description, type }\n\nfunction s(x) { return (x ?? '').toString().trim(); }\n\n// Get webhook payload (prefer body, fallback to root)\nconst payload = items[0].json.body ?? items[0].json;\n\nif (!payload) {\n  throw new Error('Webhook payload not found. Check the IF(false) branch connection.');\n}\n\n// Build full name\nconst first = s(payload.firstname);\nconst last  = s(payload.lastname);\nconst fullName = `${first} ${last}`.trim();\n\n// Build lead payload for Odoo\nconst out = {\n  name: fullName || s(payload.email) || 'New Lead',\n  contact_name: fullName,\n  email_from: s(payload.email),\n  phone: s(payload.phone),\n  description: s(payload.notes),\n  type: 'lead',\n};\n\nreturn [{ json: out }];\n"
+      },
+      "id": "514c4823-5ec7-4118-8d68-afdbc8d17fb7",
+      "name": "Prepare Request",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -432,
+        176
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {},
+      "id": "67ab8666-9e30-4d2f-9668-40595a14b41c",
+      "name": "Execution Data",
+      "type": "n8n-nodes-base.executionData",
+      "position": [
+        0,
+        176
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "acadec3f-c3ed-499a-a14e-f134737cb43f",
+      "name": "Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        224,
+        176
+      ],
+      "typeVersion": 1.4
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "or",
+          "conditions": [
+            {
+              "id": "60ce05fd-ff94-4e59-9ebc-09c058b8f7fb",
+              "operator": {
+                "type": "string",
+                "operation": "notExists",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.body.firstname }}",
+              "rightValue": ""
+            },
+            {
+              "id": "714cc2e5-e781-4fc2-a6af-af3e16a58d21",
+              "operator": {
+                "type": "string",
+                "operation": "notExists",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.body.lastname }}",
+              "rightValue": ""
+            },
+            {
+              "id": "c09b99e1-faf0-44c4-a9e1-2d4192a61c9c",
+              "operator": {
+                "type": "string",
+                "operation": "notExists",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.body.email }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d1c64f10-8f6b-4948-8ced-514fb03dca7b",
+      "name": "Required data missing?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -656,
+        96
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "df4a8b30-1614-4cc0-bd25-20fcfa1cc73f",
+      "name": "Bad Request",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        -432,
+        32
+      ],
+      "typeVersion": 1.4
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Lead Webform": {
+      "main": [
+        [
+          {
+            "node": "Required data missing?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Lead": {
+      "main": [
+        [
+          {
+            "node": "Execution Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Request": {
+      "main": [
+        [
+          {
+            "node": "Create Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Required data missing?": {
+      "main": [
+        [
+          {
+            "node": "Bad Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execution Data": {
+      "main": [
+        [
+          {
+            "node": "Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "23454d18-ce8c-452f-8916-d9c8b6319af6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bcc1015e148d2041df5d464cc6226cc333781f3ad19d823e20e7b42ce9b4abe3"
+  },
+  "id": "LPmfVe8lyo6CApe4",
+  "tags": []
+}
